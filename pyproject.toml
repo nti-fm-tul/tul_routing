@@ -8,6 +8,8 @@ dependencies = {file = ["requirements.txt"]}
 
 [project]
 name = "tul_routing"
+description = "TUL Routing project"
+long_description = "TUL Routing project is a project for parsing various routing formats and solving routing problems."
 dynamic = ["dependencies"]
 version = "0.0.1"
 authors = [
