@@ -2,12 +2,20 @@
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
+# [tool.setuptools.dynamic]
+# dependencies = {file = ["requirements.txt"]}
+
 
 [project]
 name = "tul_routing"
+# dynamic = ["dependencies"]
 version = "0.0.1"
 authors = [
-    { name = "Jan Hybš", email = "jan.hybs@tul.cz" },
+    { name = "Jan Hybs", email = "jan.hybs@tul.cz" },
     { name = "Radek Srb", email = "radek.srb@tul.cz" },
-    { name = "Jiří Vraný", email = "jiri.vrany@tul.cz" },
+    { name = "Jiri Vrany", email = "jiri.vrany@tul.cz" },
 ]
+
+[project.urls]
+"Homepage" = "https://github.com/janhybs/tul_routing"
+"Bug Tracker" = "https://github.com/janhybs/tul_routing/issues"
