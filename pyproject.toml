@@ -2,13 +2,13 @@
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
-# [tool.setuptools.dynamic]
-# dependencies = {file = ["requirements.txt"]}
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
 
 
 [project]
 name = "tul_routing"
-# dynamic = ["dependencies"]
+dynamic = ["dependencies"]
 version = "0.0.1"
 authors = [
     { name = "Jan Hybs", email = "jan.hybs@tul.cz" },
