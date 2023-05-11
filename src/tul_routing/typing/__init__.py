@@ -5,6 +5,7 @@ import numpy as np
 from pandas import DataFrame, Series
 
 from .df_segmented_type import DFSegmentedType
+from .match_response_type import OSRMMatchResponse, Leg
 
 
 class DFLatLongType:
