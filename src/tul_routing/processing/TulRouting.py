@@ -1,5 +1,4 @@
-from pathlib import Path
-from typing import Dict, Tuple, Union
+from typing import Dict
 
 from ..config import Config
 from ..logging import logger
@@ -11,7 +10,7 @@ class TulRouting(object):
         if config is None:
             logger.warn("Using default config, which may not be suitable for production.")
             config = Config()
-        
+
         logger.debug(f"""Using config: {config}, with 
             osrm_api_server: {config.osrm_api_server}
             open_elevation_api_server: {config.open_elevation_api_server}
@@ -21,13 +20,12 @@ class TulRouting(object):
         self.config = config
 
     def run(self, path_like: PathLike, verbose=True, options: Dict = None) -> DFSegmentedTypeLike:
-        # from feature_extraction.feature_pipeline import query_features_from_apis, drop_nearby_points
-        # from speed_predictor.analytic_speed_predictor import analytic_predict
-        from .feature_pipeline  import query_features_from_apis
+        from .feature_pipeline import query_features_from_apis
         from ..parsing import Parser
         from ..utils.town_cache import TownCache
         from ..etl.Graph import Graph, GraphChain
         from .feature_extraction import drop_nearby_points
+        from ..segmentation import segment_columns
 
         parser = Parser()
         options = dict() if not options else options
@@ -59,30 +57,7 @@ class TulRouting(object):
             GraphChain(query_features_from_apis, verbose=verbose, inputs=lambda x, _: (x, verbose, options)),
 
             # 5) segmentation
-            # GraphChain(
-            #     segmentation.resample_features,
-            #     inputs=lambda x, _: (x, verbose, options),
-            # ),
-
-            # # 5.1) add CAN parameters
-            # GraphChain(
-            #     can_params=can_params,
-            #     inputs=lambda df, _: (df, options.get("can_params", dict()))
-            # ),
-
-            # # 5.2) optionally run analytic speed predictor
-            # GraphChain(
-            #     analytical=analytic_predict,
-            #     inputs=lambda df, _: (df, options)
-            # ),
-
-            # # 6) optionally we dump the segmented data to a csv file
-            # GraphChain(
-            #     dump_dataframe_to_csv,
-            #     # optionally will generate a file "preprocess.yyyy-mm-dd-HH-MM-SS-rnd.after-seg.csv"
-            #     inputs=lambda df, _: (df, 'preprocess', '.after-seg')
-            # ),
-
+            GraphChain(segment_columns, inputs=lambda x, _: (x, self.config)),
         ], verbose=verbose)
 
         graph.process_options(options)

@@ -1,5 +1,6 @@
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import Callable
 
@@ -32,9 +33,13 @@ class ParseOptions:
     ...
 
 
-@dataclass
-class SegmentationsOptions:
-    ...
+class SegmentationKind(Enum):
+    LINEAR = 'linear'
+    NEAREST = 'nearest'
+    ONCE = 'once'
+
+
+SegmentationsOptions = dict[str, SegmentationKind]
 
 
 @dataclass
@@ -54,4 +59,4 @@ class Config:
 
     parse_options: ParseOptions = ParseOptions()
     enrich_options: EnrichOptions = EnrichOptions()
-    segmentations_options: SegmentationsOptions = SegmentationsOptions()
+    segmantation_options: SegmentationsOptions = field(default_factory=lambda: dict())
