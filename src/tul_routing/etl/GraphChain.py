@@ -1,9 +1,10 @@
-from typing import Any, Callable, Dict, Iterable, Optional, Union
+from typing import Callable, Iterable, Optional, Union
 
 from .func_name import func_name
 
-InputGenerator = Callable[[Any, Dict[str, Any]], Iterable[Any]]
+InputGenerator = Callable[[any, dict[str, any]], Iterable[any]]
 InputNames = Iterable[str]
+
 
 class GraphChain(object):
     """
@@ -13,9 +14,9 @@ class GraphChain(object):
 
     def __init__(self,
                  method: Optional[Callable] = None,
-                 store_as: Optional[str] = None,
+                 store_as: str | None = None,
                  id: str = None,
-                 inputs: Optional[Union[InputGenerator, InputNames]] = None,
+                 inputs: InputGenerator | InputNames | None = None,
                  verbose=0,
                  enabled=True,
                  **kwargs):
@@ -78,11 +79,11 @@ class GraphChain(object):
 
     def __str__(self) -> str:
         return f"{self.id}"
-    
+
     def __repr__(self) -> str:
         return self.__str__()
 
-    def __call__(self, previous, store: Dict[str, Any]):
+    def __call__(self, previous, store: dict[str, any]):
         args = [previous]
         if self.inputs:
             if isinstance(self.inputs, Iterable):
@@ -95,5 +96,6 @@ class GraphChain(object):
             return previous
 
         return self.method(*args)
-    
-GraphChainOrCallable = Union[GraphChain, Callable]
+
+
+GraphChainOrCallable = GraphChain | Callable

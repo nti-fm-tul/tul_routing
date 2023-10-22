@@ -1,5 +1,6 @@
 from typing import Any
 
+
 def func_name(mtd: Any, *args):
     extra = '' if not args else f" ({', '.join(map(str, args))})"
     try:

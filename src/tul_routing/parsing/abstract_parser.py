@@ -29,12 +29,4 @@ class AbstractParser(metaclass=abc.ABCMeta):
         """
         points = self.get_points()
 
-        if DFStandardisedType.timestamp not in points:
-            # # issue #1
-            # import time
-            # import numpy as np
-            # now = int(time.time())
-            # times = np.arange(now, now + len(points))
-            points[DFStandardisedType.timestamp] = np.nan
-
         return points[DFStandardisedType.columns()]

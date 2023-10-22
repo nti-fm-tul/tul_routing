@@ -10,3 +10,4 @@
 
 # project specific
 *.env
+/.idea/

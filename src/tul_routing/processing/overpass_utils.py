@@ -12,16 +12,15 @@ from shapely.geometry import Point
 from tqdm import tqdm
 
 from ..config import Config
-from ..logging import logger
 from ..typing import OSRMMatchResponse
-from ..utils.timer import Timer, timeit
+from ..utils.timer import Timer
+
 
 class OverpassUtils:
 
     def __init__(self, config: Config) -> None:
         self.config = config
         self.overpass_api_server = config.overpass_api_server
-
 
     def label_junctions(self, df: DataFrame, parallel=True, verbose=True) -> DataFrame:
         """
@@ -65,80 +64,17 @@ class OverpassUtils:
         df['node_id'] = df['node_id'].fillna(-1)
 
         df = pd.merge(df, node_df, how='left', on='node_id', validate='many_to_one')
-        
+
         df.loc[df['node_id'] == -1, 'node_id'] = np.nan
 
-        if 'intersection' not in df:
-            df['intersection'] = np.nan
-
-        intersection_indices = df[df.intersection == 'indistinct'].index.to_numpy()
-        for i in intersection_indices:
-            if i > 0 and i < df.shape[0] - 1:
-                df.iloc[i, df.columns.get_loc('intersection')] = self.postprocess_intersection(df, i)
-
-        df = self.fill_in_roundabout_gaps(df)
-
         return df
-
 
     def fill_gap(self, x, v):
         for i in range(0, x.shape[0] - v.shape[0]):
-            if np.sum(x[i:i+v.shape[0]] * v) == 2:
-                x[i:i+v.shape[0]] = 1
-                
+            if np.sum(x[i:i + v.shape[0]] * v) == 2:
+                x[i:i + v.shape[0]] = 1
+
         return x
-
-
-    def fill_in_roundabout_gaps(self, df):
-        mask = (df.intersection == 'roundabout').to_numpy().astype('uint8')
-        mask = self.fill_gap(mask, np.array([1, 0, 1])) # fill one row gaps
-        mask = self.fill_gap(mask, np.array([1, 0, 0, 1])) # fill two row gaps
-
-        df.loc[mask.astype('bool'), 'intersection'] = 'roundabout'
-
-        return df
-
-
-    def postprocess_intersection(self, df, i):
-        """
-        Relabels intersections based on way type of ways belonging to the intersection.
-        """
-        priorities = {
-            'motorway': 1,
-            'motorway_link': 2,
-            'trunk': 3, 
-            'trunk_link': 4,
-            'primary': 5,
-            'primary_link': 6,
-            'secondary': 7,
-            'secondary_link': 8,
-            'tertiary': 9,
-            'tertiary_link': 10,
-            'residential': 11,
-            'living_street': 12,
-            'service': 13,
-            'unclassified': 14
-        }
-
-        df.loc[~df["way_type"].isin(priorities.keys()), "way_type"] = "unclassified"
-        
-        node_tags = df.iloc[i].way_tags
-        all_priorities = set(priorities[w['highway']] for w in node_tags)
-        prev_priority = priorities[df.iloc[i-1].way_type]
-        next_priority = priorities[df.iloc[i+1].way_type]
-        
-        if len(all_priorities) == 1:
-            return 'indistinct'
-        elif prev_priority == next_priority:
-            if any((ap < prev_priority for ap in all_priorities)):
-                return 'side_to_side'
-            else:
-                return 'main_to_main'
-        elif prev_priority < next_priority:
-            return 'main_to_side'
-        else:
-            return 'side_to_main'
-
 
     def _label_junctions(self, df: DataFrame) -> DataFrame:
         """
@@ -157,34 +93,10 @@ class OverpassUtils:
             res = self.query_node_ways_by_id(nid)
 
         node_dict['node_id'] = res.nodes[0].id
-        node_dict['node_tags'] = res.nodes[0].tags
-        node_dict['way_tags'] = [w.tags for w in res.ways]
-        tmp_ways = []
-
-        for w in node_dict['way_tags']:
-            if 'junction' in w.keys() and w['junction'] == 'roundabout':
-                node_dict['intersection'] = 'roundabout'
-                return node_dict
-
-            if len(tmp_ways) == 0:
-                tmp_ways.append(w)
-                continue
-
-            if 'ref' in w.keys() and w['ref'] in (ws['ref'] for ws in tmp_ways if 'ref' in ws.keys()):
-                continue
-
-            if 'name' in w.keys() and w['name'] in (ws['name'] for ws in tmp_ways if 'name' in ws.keys()):
-                continue
-
-            tmp_ways.append(w)
-
-        if len(tmp_ways) > 1:
-            node_dict['intersection'] = 'indistinct'
 
         node_data.append(node_dict)
 
         node_df = pd.DataFrame(node_data)
-
         df['node_id'] = df['node_id'].fillna(-1)
 
         df = df.drop(columns=['n_of_ways'])
@@ -195,39 +107,18 @@ class OverpassUtils:
 
         return df
 
-
     def load_node_dict_by_node_id(self, nid, i):
         node_dict = dict()
         res = self.query_node_ways_by_id(nid)
 
+        if self.config.enrich_options.node_enrichment:
+            new_node_dict = self.config.enrich_options.node_enrichment(res.nodes[0].tags)
+            node_dict.update(new_node_dict)
+
         node_dict['node_id'] = res.nodes[0].id
         node_dict['i'] = i
-        node_dict['node_tags'] = res.nodes[0].tags
-        node_dict['way_tags'] = [w.tags for w in res.ways]
-        tmp_ways = []
-
-        for w in node_dict['way_tags']:
-            if 'junction' in w.keys() and w['junction'] == 'roundabout':
-                node_dict['intersection'] = 'roundabout'
-                return node_dict
-                
-            if len(tmp_ways) == 0:
-                tmp_ways.append(w)
-                continue
-
-            if 'ref' in w.keys() and w['ref'] in (ws['ref'] for ws in tmp_ways if 'ref' in ws.keys()):
-                continue
-
-            if 'name' in w.keys() and w['name'] in (ws['name'] for ws in tmp_ways if 'name' in ws.keys()):
-                continue
-
-            tmp_ways.append(w)
-
-        if len(tmp_ways) > 1:
-            node_dict['intersection'] = 'indistinct'
 
         return node_dict
-
 
     @functools.lru_cache(maxsize=10_000)
     def query_node_ways_by_id(self, node_id):
@@ -252,45 +143,42 @@ class OverpassUtils:
         ]
 
         query = (
-            '[out:json];'
-            'node(id:' + node_id + ');'
-            'out;'
-            'way(bn)[highway~"^(' + '|'.join(way_types) + ')$"];'
-            'out;'
+                '[out:json];'
+                'node(id:' + node_id + ');'
+                                       'out;'
+                                       'way(bn)[highway~"^(' + '|'.join(way_types) + ')$"];'
+                                                                                     'out;'
         )
 
         res = self.overpass_query(api, query)
 
         return res
-
 
     def query_nodes_coords_by_id(self, node_ids):
         api_server = f"{self.overpass_api_server}/api/interpreter"
         api = overpy.Overpass(url=api_server)
 
         query = (
-            '[out:json];'
-            'node(id:' + ",".join(node_ids) + ');'
-            'out;'
+                '[out:json];'
+                'node(id:' + ",".join(node_ids) + ');'
+                                                  'out;'
         )
         res = self.overpass_query(api, query)
 
         return res
-
 
     def query_ways_by_id(self, way_ids):
         api_server = f"{self.overpass_api_server}/api/interpreter"
         api = overpy.Overpass(url=api_server)
 
         query = (
-            '[out:json];'
-            'way(id:' + ",".join(way_ids) + ');'
-            'out;'
+                '[out:json];'
+                'way(id:' + ",".join(way_ids) + ');'
+                                                'out;'
         )
         res = self.overpass_query(api, query)
 
         return res
-
 
     def bind_nodes(self, df: DataFrame, match: OSRMMatchResponse) -> DataFrame:
         """Queries all node ids and binds them to waypoints according to the spatial proximity.
@@ -317,44 +205,16 @@ class OverpassUtils:
         node_dicts = []
         for n in res.nodes:
             node_dict = {'node_id': int(n.id), 'geometry': Point(n.lon, n.lat)}
-            tags_keys = list(n.tags.keys()) if n.tags else []
-            tags_vals = list(n.tags.values()) if n.tags else []
-
-            # handle highway keys
-            if 'highway' in tags_keys:
-                node_dict['node:highway'] = n.tags['highway']
-
-                if 'crossing' in tags_keys:
-                    node_dict['node:crossing'] = n.tags['crossing']
-                if 'direction' in tags_keys:
-                    node_dict['node:direction'] = n.tags['direction']
-
-            # handle railway keys
-            if 'railway' in tags_keys:
-                node_dict['node:railway'] = n.tags['railway']
-
-                if 'crossing' in tags_keys:
-                    node_dict['node:crossing'] = n.tags['crossing']
-
-            # stop sign
-            # traffic_sign=stop, traffic_sign=stop_sign, highway=stop, railway=stop
-            if any(x for x in tags_vals if x == 'stop' or x == 'stop_sign'):
-                node_dict['node:stop'] = 'stop'
-            # stop=yes, stop=all, stop=minor
-            elif any(x for x in tags_keys if x == 'stop' or x == 'stop_sign'):
-                node_dict['node:stop'] = 'stop'
-
             node_dicts.append(node_dict)
 
         node_df = gpd.GeoDataFrame(node_dicts)
 
-        df = df.drop(columns=['node_id', 'node:highway', 'node:crossing', 'node:railway', 'node:direction'])
+        df = df.drop(columns=['node_id', 'node:highway', 'node:crossing', 'node:railway', 'node:direction'], errors='ignore')
         df = gpd.sjoin(df, node_df, how='left', op='contains')
 
         df = df.drop(columns=['index_right', 'geometry'])
 
         return df
-
 
     def add_way_data(self, df: DataFrame) -> DataFrame:
         """Queries all way ids in dataframe and adds tags describing
@@ -366,26 +226,29 @@ class OverpassUtils:
 
         way_data = []
         for way in res.ways:
-            way_dict = {}
+
+            way_dict = dict()
+            if self.config.enrich_options.way_enrichment:
+                way_dict = self.config.enrich_options.way_enrichment(way.tags)
+            else:
+                way_dict['way_type'] = way.tags.get('highway', None)
+                way_dict['way_maxspeed'] = way.tags.get('maxspeed', None)
+                way_dict['way_surface'] = way.tags.get('surface', None)
+
             way_dict['way_id'] = way.id
-            way_dict['way_type'] = way.tags['highway'] if 'highway' in way.tags.keys(
-            ) else None
-            way_dict['way_maxspeed'] = way.tags['maxspeed'] if 'maxspeed' in way.tags.keys(
-            ) else None
-            way_dict['way_surface'] = way.tags['surface'] if 'surface' in way.tags.keys(
-            ) else None
             way_data.append(way_dict)
 
         way_df = pd.DataFrame(way_data)
 
         df['way_id'] = df['way_id'].astype('int')
-        df = df.drop(columns=['way_type', 'way_maxspeed', 'way_surface'])
+
+        way_df_cols = list(way_df.columns)
+        way_df_cols.remove('way_id')
+        df = df.drop(columns=way_df_cols, errors='ignore')
+
         df = pd.merge(df, way_df, how='left', on='way_id', validate='many_to_one')
-        # fix
-        df = df.astype({'way_maxspeed': 'float64'})
 
         return df
-
 
     def overpass_query(self, api: overpy.Overpass, query: str) -> overpy.Result:
         """

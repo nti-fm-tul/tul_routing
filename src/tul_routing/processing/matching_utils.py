@@ -15,10 +15,12 @@ from ..typing import Leg, NPLatLong, OSRMMatchResponse
 from ..utils.ensure_type import ensure_columns
 from ..utils.geo_calculations import map_path_to_distance
 
+
 class OSRMMatchingException(Exception):
     """Exception related to OSRM"""
     pass
- 
+
+
 class OSRMMatchingUtils(object):
 
     def __init__(self, config: Config):
@@ -26,26 +28,6 @@ class OSRMMatchingUtils(object):
         self.osrm_api_server = config.osrm_api_server
         self.request_timeout = config.request_timeout
         self.osrm_location_limit = config.osrm_location_limit
-        self.feat_headers = """
-Column name;Data type;Description
-latitude;float64;
-longitude;float64;
-speed_osrm;float64;
-way_id;Int64;
-node_id;Int64;
-node:highway;category;
-node:crossing;category;
-node:direction;category;
-node:railway;category;
-original_latitude;float64;
-original_longitude;float64;
-timestamp;Int64;
-way_type;category;
-way_maxspeed;float64;
-way_surface;category;
-n_of_ways;Int64;
-elevation;float64;
-""".strip()
 
     def construct_osrm_url(self, pnts: NPLatLong, try_harder=False) -> str:
         api_url = f"{self.osrm_api_server}/match/v1/driving/"
@@ -56,7 +38,6 @@ elevation;float64;
             params += '&radiuses=' + ';'.join(['100'] * len(pnts))
         full_url = api_url + pnts_str + params
         return full_url
-
 
     def map_match_osrm(self, pnts: NPLatLong, confidence=0.8, strict_mode=False) -> OSRMMatchResponse:
         """
@@ -71,9 +52,9 @@ elevation;float64;
         """
 
         step = self.osrm_location_limit
-        responses = [ ]
+        responses = []
         for i in range(0, len(pnts), step):
-            small_pnts = pnts[i:i+step]
+            small_pnts = pnts[i:i + step]
             responses.append(
                 self._map_match_osrm(small_pnts, confidence, strict_mode)
             )
@@ -97,7 +78,6 @@ elevation;float64;
 
         base['matchings'][0]['confidence'] /= pieces
         return base
-
 
     def _map_match_osrm(self, pnts: NPLatLong, confidence=0.8, strict_mode=False) -> OSRMMatchResponse:
         """
@@ -139,7 +119,6 @@ elevation;float64;
 
         return res_json
 
-
     def filter_matching(self, match_result: OSRMMatchResponse):
         """transforms matching result dropping irrelevant keys
         and duplicate geometry points
@@ -176,7 +155,6 @@ elevation;float64;
 
         return steps, nodes, tracepoints
 
-
     def get_binding_table(self, df: DataFrame, match: OSRMMatchResponse) -> DataFrame:
         """Performs inner join on input dataframe and matched tracepoints. 
         Df and tracepoints have identical length. Df contains original coordinates
@@ -197,17 +175,6 @@ elevation;float64;
         df['matched_longitude'] = np.nan
         df['match_distance'] = np.nan
 
-        # add missing cols
-        df = ensure_columns(df, [
-            'engine_rpm',
-            'engine_gear',
-            'brake_pressure',
-            'throttle_pedal',
-            'BM_links',
-            'BM_rechts'
-        ])
-
-        #df['way_id'] = np.nan
         for i, tp in enumerate(tracepoints):
             if tp:
                 df.iloc[i, df.columns.get_loc(
@@ -215,19 +182,20 @@ elevation;float64;
                 df.iloc[i, df.columns.get_loc(
                     'matched_longitude')] = tp['location'][0]
                 df.iloc[i, df.columns.get_loc('match_distance')] = tp['distance']
-                #df.iloc[i, df.columns.get_loc('way_id')] = tp['name']
 
-        df = df.dropna(subset=['matched_latitude']) # drop all rows of input dataframe that have not been matched
+        # drop all rows of input dataframe that have not been matched
+        df = df.dropna(subset=['matched_latitude'])
 
         out_rows = df.shape[0]
 
-        if in_rows != out_rows and (in_rows - out_rows) / in_rows > 0.02: # if more than 2% of points was not matched
+        # if more than 2% of points was not matched
+        if in_rows != out_rows and (in_rows - out_rows) / in_rows > 0.02:
             pts_count = in_rows - out_rows
             pts_perc = pts_count / in_rows * 100
-            warnings.warn(f'{pts_count} input points ({pts_perc:.1f}%) have not been matched and will not be included in the output')
+            warnings.warn(
+                f'{pts_count} input points ({pts_perc:.1f}%) have not been matched and will not be included in the output')
 
         return df
-
 
     def process_leg(self, leg: Leg):
         """Transforms data from leg into array of dictionaries where each
@@ -255,7 +223,6 @@ elevation;float64;
                 }) for pnt in s['geometry']['coordinates'][:]]
 
         return points
-    
 
     def match_to_dataframe(self, match: OSRMMatchResponse) -> DataFrame:
         """Extracts waypoints, speeds based on OSRM and OSM way_id from map-matching response."""
@@ -267,16 +234,14 @@ elevation;float64;
         # ensures all waypoints are unique
         filtered = [coords[0]]
         for p in coords[1:]:
-            if geodesic([p['latitude'], p['longitude']], [filtered[-1]['latitude'], filtered[-1]['longitude']]).meters > 0.0001:
+            if geodesic([p['latitude'], p['longitude']],
+                        [filtered[-1]['latitude'], filtered[-1]['longitude']]).meters > 0.0001:
                 filtered.append(p)
 
-        feat_headers = pd.read_csv(StringIO(self.feat_headers), sep=';', index_col='Column name')
-        df = pd.DataFrame(filtered, columns=feat_headers.index.to_list())
-
+        df = pd.DataFrame(filtered)
         df = self.filter_speed_osrm(df)
 
         return df
-
 
     def filter_speed_osrm(self, df: DataFrame) -> DataFrame:
         """Filter speed_osrm."""
@@ -287,8 +252,8 @@ elevation;float64;
         df_help["dist"] = [0] + map_path_to_distance(df)
         df_help["dist_cum"] = df_help["dist"].cumsum()
         df_help['speed_osrm_new'] = df_help['speed_osrm']
-        for i in range(len(df)-1):
-            pos = (df_help["dist_cum"][i] + df_help["dist_cum"][i+1]) / 2
+        for i in range(len(df) - 1):
+            pos = (df_help["dist_cum"][i] + df_help["dist_cum"][i + 1]) / 2
             ind = (df_help["dist_cum"] >= pos - win_len / 2) & (df_help["dist_cum"] <= pos + win_len / 2)
 
             x = ind.index[ind]
@@ -299,22 +264,11 @@ elevation;float64;
                 continue
 
             df_help['speed_osrm_new'].iat[i] = (df_help.loc[ind, "speed_osrm"] * df_help.loc[ind, "dist"]).sum() / \
-                                            df_help.loc[ind, "dist"].sum()
-
-        # import matplotlib.pyplot as plt
-        # df_help.plot(x="dist_cum", y=["speed_osrm", "speed_osrm_new"])
-        # plt.show()
-
-        df['speed_osrm_filtered'] = df_help['speed_osrm_new']
+                                               df_help.loc[ind, "dist"].sum()
 
         return df
 
-
     def bind_original_data(self, df: DataFrame, original_data: DataFrame) -> DataFrame:
-        # fix, data without timestamp
-        timestamped = False
-        if 'timestamp' in original_data.columns and any(~original_data.timestamp.isna()):
-            timestamped = True
 
         # matched geometry points
         mpnts = df[['latitude', 'longitude']].to_numpy()
@@ -323,28 +277,17 @@ elevation;float64;
         opnts = original_data[['matched_latitude', 'matched_longitude']].to_numpy()
 
         # cdists to deal with loops
-        mdist = [geodesic(mpnts[i], mpnts[i-1]).meters for i in range(1, len(mpnts))]
+        mdist = [geodesic(mpnts[i], mpnts[i - 1]).meters for i in range(1, len(mpnts))]
         mdist.insert(0, 0.0)
         mcdist = np.cumsum(mdist)
 
-        odist = [geodesic(opnts[i], opnts[i-1]).meters for i in range(1, len(opnts))]
+        odist = [geodesic(opnts[i], opnts[i - 1]).meters for i in range(1, len(opnts))]
         odist.insert(0, 0.0)
         ocdist = np.cumsum(odist)
 
         # initialize binding columns
         df['original_latitude'] = np.nan
         df['original_longitude'] = np.nan
-        df['timestamp'] = pd.Series([], dtype='Int64')
-
-        # add missing cols
-        df = ensure_columns(df, [
-            'engine_rpm',
-            'engine_gear',
-            'brake_pressure',
-            'throttle_pedal',
-            'BM_links',
-            'BM_rechts'
-        ])
 
         for i in range(opnts.shape[0]):
             match_indices = np.where(np.sum(np.abs(mpnts - opnts[i]), axis=1) < 0.0000001)[0]
@@ -359,54 +302,34 @@ elevation;float64;
                 else:
                     cdist_difference = np.abs(mcdist[match_indices[j]] - ocdist[i]) / ocdist[i]
 
-                if cdist_difference < 0.05: # if difference is less than 5%, same round
-                    if timestamped:
-                        df.iloc[match_indices[j], [
-                                        df.columns.get_loc('timestamp')
-                                    ]] = original_data.iloc[i, [
-                                        original_data.columns.get_loc('timestamp')
-                                    ]]
-                                    
+                # if difference is less than 5%, same round
+                if cdist_difference < 0.05:
+
+                    # we have different columns in df and original_data
+                    #   the rest of the columns will be mapped dynamically based on the original_data
+                    df_columns = df.columns.to_list()
+                    original_data_columns = original_data.columns.to_list()
+
+                    df_columns.remove('latitude')
+                    df_columns.remove('longitude')
+                    original_data_columns.remove('latitude')
+                    original_data_columns.remove('longitude')
+
+                    to_map_columns = list(set(df_columns) & set(original_data_columns))
+
                     df.iloc[match_indices[j], [
-                                    df.columns.get_loc('original_latitude'),
-                                    df.columns.get_loc('original_longitude'),
-                                    df.columns.get_loc('engine_rpm'),
-                                    df.columns.get_loc('engine_gear'),
-                                    df.columns.get_loc('brake_pressure'),
-                                    df.columns.get_loc('throttle_pedal'),
-                                    df.columns.get_loc('BM_links'),
-                                    df.columns.get_loc('BM_rechts')
-                                ]] = original_data.iloc[i, [
-                                    original_data.columns.get_loc('latitude'),
-                                    original_data.columns.get_loc('longitude'),
-                                    original_data.columns.get_loc('engine_rpm'),
-                                    original_data.columns.get_loc('engine_gear'),
-                                    original_data.columns.get_loc('brake_pressure'),
-                                    original_data.columns.get_loc('throttle_pedal'),
-                                    original_data.columns.get_loc('BM_links'),
-                                    original_data.columns.get_loc('BM_rechts')
-                                ]]
+                        df.columns.get_loc('original_latitude'),
+                        df.columns.get_loc('original_longitude'),
+                        *df.columns.get_indexer(to_map_columns)
+                    ]] = original_data.iloc[i, [
+                        original_data.columns.get_loc('latitude'),
+                        original_data.columns.get_loc('longitude'),
+                        *original_data.columns.get_indexer(to_map_columns)
+                    ]]
 
                     break
-        
-        if timestamped:
-            unused_timestamps_cnt = original_data.shape[0] - df[~df["timestamp"].isna()].shape[0]
-
-            if unused_timestamps_cnt > 10:
-                warnings.warn(f'{unused_timestamps_cnt} timestamped points unused.')
-
-            longest_gap = df.loc[~df['timestamp'].isna(), 'timestamp'].diff().max()
-
-            if longest_gap > 50000: # if gap in timestamped data > 50 secs (very sparse)
-                raise OSRMMatchingException("Gap in data > 50 seconds.")
-
-            # check negative speeds (GPS measurement problem)
-            df.timestamp = df.timestamp.astype('float64')
-            if any(df[~df.timestamp.isna()].timestamp.diff() < 0):
-                raise Exception("Original data not matched chronologically.")
 
         return df
-
 
     def get_timestamp(self, df, speed_column_label='target_speed', start=time.time()):
         step_distance = self.get_step_distance(df)
@@ -424,7 +347,6 @@ elevation;float64;
 
         return step_timestamp
 
-
     def get_step_distance(self, df):
         geodesic = pyproj.Geod(ellps='WGS84')
         step_distance = geodesic.inv(
@@ -436,14 +358,13 @@ elevation;float64;
 
         return step_distance
 
-
     def get_speed(self, df: DataFrame, speed_column_label='speed') -> DataFrame:
-        if df.timestamp.isnull().all(): # hack, inconsistent data input when kml data input
+        if df.timestamp.isnull().all():  # hack, inconsistent data input when kml data input
             df[speed_column_label] = 0
         else:
             step_dur = df.timestamp.diff() / 1000
-            step_dur = step_dur.round(0) # hack, inconsistent sampling frequency problem
-            step_dur[step_dur == 0.0] = np.nan # hack, incosistent sampling frequency problem
+            step_dur = step_dur.round(0)  # hack, inconsistent sampling frequency problem
+            step_dur[step_dur == 0.0] = np.nan  # hack, incosistent sampling frequency problem
             step_dist = self.get_step_distance(df)
             df[speed_column_label] = step_dist / step_dur
 

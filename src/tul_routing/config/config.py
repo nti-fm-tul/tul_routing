@@ -1,12 +1,12 @@
 import os
-import sys
-import uuid
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
 
-def _env_or_default(name: str, default: str):
-    return os.environ[name] if name in os.environ else default
+def _env_or_default(name: str, default: str | Path) -> str:
+    return os.environ[name] if name in os.environ else str(default)
+
 
 # define api server urls
 _server_url = "http://viroco.nti.tul.cz"
@@ -26,6 +26,23 @@ osrm_location_limit = 20_000
 datadir = Path(_env_or_default('TUL_ROUTING_DATA_DIR', Path(os.getcwd(), 'data')))
 datafiles_file = lambda filename: str(datadir / filename)
 
+
+@dataclass
+class ParseOptions:
+    ...
+
+
+@dataclass
+class SegmentationsOptions:
+    ...
+
+
+@dataclass
+class EnrichOptions:
+    way_enrichment: Callable[[dict], dict] = lambda x: dict()
+    node_enrichment: Callable[[dict], dict] = lambda x: dict()
+
+
 @dataclass
 class Config:
     osrm_api_server: str = osrm_api_server
@@ -33,3 +50,8 @@ class Config:
     overpass_api_server: str = overpass_api_server
     request_timeout: float = request_timeout
     osrm_location_limit: int = osrm_location_limit
+    drop_unwanted_columns: bool = True
+
+    parse_options: ParseOptions = ParseOptions()
+    enrich_options: EnrichOptions = EnrichOptions()
+    segmentations_options: SegmentationsOptions = SegmentationsOptions()

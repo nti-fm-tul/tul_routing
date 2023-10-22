@@ -35,9 +35,8 @@ class DFNavLatLongType:
 class DFStandardisedType:
     @classmethod
     def columns(cls):
-        return [cls.timestamp, cls.latitude, cls.longitude]
+        return [cls.latitude, cls.longitude]
 
-    timestamp: Series = "timestamp"
     latitude: Series = "latitude"
     longitude: Series = "longitude"
 

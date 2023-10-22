@@ -13,10 +13,12 @@ _logger.propagate = False
 logger = _logger
 logger.warn = warnings.warn
 
-def __setLevel(level: Any):
+
+def __set_level(level: Any):
     logger.setLevel(level)
     _stream.setLevel(level)
 
-logger.setLevelForAll = __setLevel
+
+logger.set_level_for_all = __set_level
 
 __all__ = ['logger']

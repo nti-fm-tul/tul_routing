@@ -1,21 +1,23 @@
 from typing import Any, Callable, List, Optional, Dict
 
-from .func_name import func_name
 from .GraphChain import GraphChain, GraphChainOrCallable
+from .func_name import func_name
 from ..utils.timer import Timer
+
 
 class Graph(object):
     """
-    A class representing simple pipeline, which can be executed and debbuged
+    A class representing simple pipeline, which can be executed and debugged
     """
 
-    def __init__(self, chain: List[GraphChainOrCallable]=None, verbose=0, after_step_callback: Optional[Callable]=None):
+    def __init__(self, chain: List[GraphChainOrCallable] = None, verbose=0,
+                 after_step_callback: Optional[Callable] = None):
         self.chain: List[GraphChainOrCallable] = chain or []
         self.verbose = verbose
-        self.store = { }
+        self.store = {}
         self.after_step_callback = after_step_callback
         self.disabled_chains = set()
-    
+
     def add(self, *chain: GraphChainOrCallable):
         self.chain.extend(chain)
         return self
@@ -68,11 +70,10 @@ class Graph(object):
 
         return mtd_name
 
-
     def get_func_is_enabled(self, mtd):
         if isinstance(mtd, GraphChain):
             return mtd.enabled
-        
+
         chain_name = func_name(mtd)
         return chain_name not in self.disabled_chains
 
@@ -97,4 +98,3 @@ class Graph(object):
                             else:
                                 self.disabled_chains.add(chain_name)
         return self
-

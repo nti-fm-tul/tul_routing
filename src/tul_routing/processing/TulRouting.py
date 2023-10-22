@@ -43,7 +43,7 @@ class TulRouting(object):
 
         # create a pipeline where current step takes an input from the previous
         graph = Graph([
-            #0) build the cache
+            # 0) build the cache
             GraphChain(build_cache),
 
             # 1) first load the file
@@ -58,7 +58,7 @@ class TulRouting(object):
             # 4) then we extract feature point using osrm, overpass and open elevation
             GraphChain(query_features_from_apis, verbose=verbose, inputs=lambda x, _: (x, verbose, options)),
 
-            # # 5) segmentation
+            # 5) segmentation
             # GraphChain(
             #     segmentation.resample_features,
             #     inputs=lambda x, _: (x, verbose, options),

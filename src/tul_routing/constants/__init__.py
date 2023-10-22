@@ -10,6 +10,3 @@ SPEED_KM_H = 3.6
 
 """Reasonable precision while matching route to the map"""
 MAP_MATCH_CONFIDENCE = 0.8
-
-""" column names containing osrm metadata """
-NODE_COLUMN_NAMES = ['node:railway', 'node:crossing', 'node:highway', 'node:stop']
