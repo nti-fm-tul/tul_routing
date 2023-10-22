@@ -57,6 +57,6 @@ class Config:
     osrm_location_limit: int = osrm_location_limit
     drop_unwanted_columns: bool = True
 
-    parse_options: ParseOptions = ParseOptions()
-    enrich_options: EnrichOptions = EnrichOptions()
-    segmantation_options: SegmentationsOptions = field(default_factory=lambda: dict())
+    segmentation_options: SegmentationsOptions = field(default_factory=lambda: dict())
+    parse_options: ParseOptions = field(default_factory=lambda: ParseOptions())
+    enrich_options: EnrichOptions = field(default_factory=lambda: EnrichOptions())

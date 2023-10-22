@@ -9,7 +9,7 @@ pip install tul-routing
 ## Usage
 
 ```python
-from tul_routing import TulRouting, Config, logger, EnrichOptions
+from tul_routing import TulRouting, Config, SegmentationKind, EnrichOptions
 logger.set_level_for_all("DEBUG")
 
 # 0) define the path to the file
@@ -38,6 +38,11 @@ config = Config(
     enrich_options=EnrichOptions(
         way_enrichment=way_enrichment,
         node_enrichment=node_enrichment,
+    ),
+    
+    segmentation_options=dict(
+        max_segment_length=SegmentationKind.LINEAR,
+        max_segment_duration=SegmentationKind.ONCE,
     ),
 )
 
