@@ -1,5 +1,15 @@
 # TUL Routing
 
+## About
+
+The TUL Routing library represents an advanced tool for route data processing, developed with a focus on flexibility and extensibility in processing and analyzing routing information. The primary goal of the library is to provide users with an easy yet powerful way to manipulate routing data, enrich it with contextual information, and customize the output for a broad range of applications, from simple mapping to complex analytical tasks.
+
+This library is designed to be user-friendly for those who may not be deeply familiar with routing system programming yet robust enough to handle sophisticated route manipulation. It facilitates detailed configuration for connecting to external services like OSRM for route mapping, Open Elevation for elevation data, and Overpass API for additional metadata from OpenStreetMap.
+
+A pivotal library feature is the route enrichment system that allows users to define custom functions for adding contextual information to routes based on way and node tags. This provides significant flexibility and enables the tailoring of the resulting dataset to the specific needs of the application.
+
+Route segmentation, a key library functionality, allows the division of data into consistent and analyzable segments. The system offers various segmentation methods, enabling users to choose the approach that best matches the nature of their data and analysis requirements.
+
 ## Installation
 
 ```bash
