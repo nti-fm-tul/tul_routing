@@ -1,5 +1,5 @@
 numpy
-pandas==1.2.2
+pandas
 gpxpy
 python-tcxparser
 requests
@@ -18,12 +18,8 @@ pygeos
 pytest
 tqdm
 joblib
-sklearn
 scipy
-scikit-learn==0.24.2
+scikit-learn
 python-multipart
 aiofiles
-opencv-python
-torch
-dask
 pyproj

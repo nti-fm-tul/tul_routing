@@ -8,7 +8,7 @@ This library is designed to be user-friendly for those who may not be deeply fam
 
 A pivotal library feature is the route enrichment system that allows users to define custom functions for adding contextual information to routes based on way and node tags. This provides significant flexibility and enables the tailoring of the resulting dataset to the specific needs of the application.
 
-Route segmentation, a key library functionality, allows the division of data into consistent and analyzable segments. The system offers various segmentation methods, enabling users to choose the approach that best matches the nature of their data and analysis requirements.
+Route segmentation, a key library functionality, allows the division of data into consistent and analyzable segments. The system offers various segmentation methods, enabling users to choose the approach that best matches the nature of their data and analysis requirements. For more details please [continue to the docs](./docs/docs.md).
 
 ## Installation
 
@@ -63,3 +63,6 @@ result = tul_routing.run(path_to_the_file, options=dict(), verbose=1)
 # 3) print the data frame
 print(result)
 ```
+## Acknowledgment
+
+The TUL Routing Library was developed and published as part of the TACR project [CK02000136 Virtual Convoy - a comprehensive environment for testing CAR2X communication systems](https://starfos.tacr.cz/en/projekty/CK02000136).
