@@ -63,6 +63,14 @@ result = tul_routing.run(path_to_the_file, options=dict(), verbose=1)
 # 3) print the data frame
 print(result)
 ```
+## Authors
+
+Ing. Jan Hybš <sup>1</sup> \
+Mgr. Jiří Vraný, Ph.D. <sup>1</sup> \
+Ing. Radek Srb <sup>1</sup>
+
+<sup>1</sup> Ústav nových technologií a aplikované informatiky, Fakulta mechatroniky, informatiky a mezioborových studií, Technická univerzita v Liberci
+
 ## Acknowledgment
 
 The TUL Routing Library was developed and published as part of the TACR project [CK02000136 Virtual Convoy - a comprehensive environment for testing CAR2X communication systems](https://starfos.tacr.cz/en/projekty/CK02000136).
